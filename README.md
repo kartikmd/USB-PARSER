@@ -1,102 +1,40 @@
-Got it 👍 Here’s a **README.md** file you can use for your assignment.
-I’ll keep it simple, clear, and matching your deliverables.
+# USB PD PDF ToC Parser — Spring Boot Backend
 
----
-
-# 📘 USB Power Delivery (USB PD) Specification Parser
-
-## 📌 Project Overview
-
-This project extracts the **Table of Contents (ToC)** from a **USB Power Delivery (USB PD) Specification PDF** and converts it into a **structured JSONL file**.
-The JSONL output preserves the **hierarchy of sections** (chapter → section → subsection) along with metadata such as section IDs, titles, page numbers, and parent-child relationships.
-
-The structured data can be used for:
-
-* Document search
-* Knowledge graph creation
-* Validation and analysis of USB PD specifications
-
----
-
-## 🚀 Features
-
-* Extracts Table of Contents (ToC) from a PDF
-* Parses each entry into:
-
-  * `section_id` (e.g., `2.1.2`)
-  * `title` (e.g., *Power Delivery Contract Negotiation*)
-  * `page` (page number)
-  * `level` (hierarchy depth)
-  * `parent_id` (e.g., `2.1` is parent of `2.1.2`)
-  * `full_path` (section + title)
-  * `doc_title` (document title)
-* Outputs **JSONL format** (one JSON object per line)
-* Handles malformed lines gracefully
-
----
-
-## 🛠️ Tech Stack
-
-* **Language**: Python 3.9+
-* **Libraries**:
-
-  * [pdfplumber](https://github.com/jsvine/pdfplumber) / [PyMuPDF](https://pymupdf.readthedocs.io/) → PDF text extraction
-  * `re` → regex parsing
-  * `json` → JSON output
-
----
-
-## 📂 Project Structure
+A minimal Spring Boot API that accepts a USB PD PDF, extracts its **Table of Contents** (ToC) from the front matter, and returns a **JSONL** stream (`usb_pd_spec.jsonl`) with entries like:
 
 ```
-.
-├── usb_pd_parser.py       # Main script
-├── usb_pd_spec.jsonl      # Output JSONL file
-├── README.md              # Documentation
-└── usb_pd_spec.pdf        # Input PDF (USB PD Specification)
+{"doc_title":"USB PD Specification","section_id":"2.1.2","title":"Power Delivery Contract Negotiation","page":53,"level":3,"parent_id":"2.1","full_path":"2.1.2 Power Delivery Contract Negotiation"}
 ```
 
----
+## How it works
+- Uses **Apache PDFBox** to extract text from the first N pages (configurable).
+- Parses likely ToC lines using robust regex + “last number is page” heuristic.
+- Computes `level` from number of dots in `section_id`, and `parent_id` by trimming the last segment.
+- Streams JSONL back as a file download, or you can redirect it to disk.
 
-## ⚡ How to Run
-
-1. **Install dependencies**
-
-   ```bash
-   pip install pdfplumber pymupdf
-   ```
-
-2. **Place the PDF file** in the project folder (e.g., `usb_pd_spec.pdf`).
-
-3. **Run the parser**
-
-   ```bash
-   python usb_pd_parser.py usb_pd_spec.pdf
-   ```
-
-4. **Check output** → `usb_pd_spec.jsonl` will be created with structured ToC entries.
-
----
-
-## 📄 Sample Output (JSONL)
-
-```json
-{"doc_title": "USB Power Delivery Specification Rev X", "section_id": "2", "title": "Overview", "page": 53, "level": 1, "parent_id": null, "full_path": "2 Overview"}
-{"doc_title": "USB Power Delivery Specification Rev X", "section_id": "2.1", "title": "Introduction", "page": 53, "level": 2, "parent_id": "2", "full_path": "2.1 Introduction"}
-{"doc_title": "USB Power Delivery Specification Rev X", "section_id": "2.1.2", "title": "Power Delivery Contract Negotiation", "page": 54, "level": 3, "parent_id": "2.1", "full_path": "2.1.2 Power Delivery Contract Negotiation"}
+## Build & Run
+```bash
+# Java 17 + Maven required
+mvn spring-boot:run
+# or build a jar
+mvn -q -DskipTests package && java -jar target/usbpd-parser-springboot-0.0.1-SNAPSHOT.jar
 ```
 
----
+## API
+### `POST /api/v1/parse-toc`
+Multipart request:
 
-## ✅ Deliverables
+- **file**: the PDF to parse
+- **docTitle** *(optional)*: defaults to file name
+- **frontPages** *(optional)*: how many initial pages to scan for ToC (default: 15)
 
-* `usb_pd_parser.py` → Python script
-* `usb_pd_spec.jsonl` → Parsed output file
-* `README.md` → Documentation (this file)
+Returns: `application/jsonl` file (`usb_pd_spec.jsonl`) as attachment.
 
----
+Example:
+```bash
+curl -X POST "http://localhost:8080/api/v1/parse-toc"   -F "file=@/path/to/usbpd.pdf"   -F "docTitle=USB PD Spec Rev 3.x"   -F "frontPages=18"   -o usb_pd_spec.jsonl
+```
 
-✨ Done!
-This README is short, professional, and exactly what your evaluator expects.
-
-Do you want me to also make a **README.txt version** (since sometimes assignments don’t require `.md` formatting)?
+## Notes
+- TOC formats vary; adjust regexes in `TocParserService` if your spec uses unusual leaders (e.g., dot leaders, tabs).
+- If your ToC doesn’t have explicit section IDs, consider adding a fuzzy heading detector (out of scope for this MVP).
