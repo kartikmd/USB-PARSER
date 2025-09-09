@@ -41,5 +41,5 @@ It follows:
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/<your-username>/usb-pd-parser.git
+git clone https://github.com/<kartikmd>/usb-pd-parser.git
 cd usb-pd-parser
