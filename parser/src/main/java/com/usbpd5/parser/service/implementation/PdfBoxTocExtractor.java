@@ -1,9 +1,7 @@
-package com.usbpd5.parser.service.implementaion;
-
-
+package com.usbpd5.parser.service.implementation;
 
 import com.usbpd5.parser.model.Section;
-import com.usbpd5.parser.service.SectionExtractor;
+import com.usbpd5.parser.service.TocExtractor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
@@ -15,16 +13,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
-public class PdfBoxSectionExtractor implements SectionExtractor {
+public class PdfBoxTocExtractor implements TocExtractor {
 
-    // Regex for headings like "2", "2.1", "2.1.2"
-    private static final Pattern HEADING_PATTERN = Pattern.compile(
-            "^(\\d+(?:\\.\\d+)*)(?:\\s+)(.+)$"
+    // Regex to capture lines like: "2.1.2 Power Delivery Contract Negotiation ........ 53"
+    private static final Pattern TOC_PATTERN = Pattern.compile(
+            "^(\\d+(?:\\.\\d+)*)(?:\\s+)(.+?)\\s+\\.{3,}\\s*(\\d+)$"
     );
 
     private final String docTitle;
 
-    public PdfBoxSectionExtractor(String docTitle) {
+    public PdfBoxTocExtractor(String docTitle) {
         this.docTitle = docTitle;
     }
 
@@ -34,17 +32,20 @@ public class PdfBoxSectionExtractor implements SectionExtractor {
 
         try (PDDocument document = PDDocument.load(pdfFile)) {
             PDFTextStripper stripper = new PDFTextStripper();
+
+            // Extract only first 20 pages (ToC is usually there)
             stripper.setStartPage(1);
-            stripper.setEndPage(document.getNumberOfPages());
+            stripper.setEndPage(Math.min(20, document.getNumberOfPages()));
 
             String text = stripper.getText(document);
             String[] lines = text.split("\\r?\\n");
 
             for (String line : lines) {
-                Matcher matcher = HEADING_PATTERN.matcher(line.trim());
+                Matcher matcher = TOC_PATTERN.matcher(line.trim());
                 if (matcher.matches()) {
                     String sectionId = matcher.group(1);
                     String title = matcher.group(2).trim();
+                    int page = Integer.parseInt(matcher.group(3));
 
                     int level = sectionId.split("\\.").length;
                     String parentId = (sectionId.contains("."))
@@ -55,7 +56,7 @@ public class PdfBoxSectionExtractor implements SectionExtractor {
                             .docTitle(docTitle)
                             .sectionId(sectionId)
                             .title(title)
-                            .page(-1) // optional: can extend to capture page numbers
+                            .page(page)
                             .level(level)
                             .parentId(parentId)
                             .fullPath(sectionId + " " + title)
@@ -67,7 +68,7 @@ public class PdfBoxSectionExtractor implements SectionExtractor {
             }
         }
 
-        log.info("Extracted {} full sections", sections.size());
+        log.info("Extracted {} ToC entries", sections.size());
         return sections;
     }
 }

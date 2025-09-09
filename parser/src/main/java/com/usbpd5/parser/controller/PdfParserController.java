@@ -6,10 +6,10 @@ import com.usbpd5.parser.service.JsonlWriter;
 import com.usbpd5.parser.service.SectionExtractor;
 import com.usbpd5.parser.service.TocExtractor;
 import com.usbpd5.parser.service.Validator;
-import com.usbpd5.parser.service.implementaion.ExcelValidator;
-import com.usbpd5.parser.service.implementaion.JacksonJsonlWriter;
-import com.usbpd5.parser.service.implementaion.PdfBoxSectionExtractor;
-import com.usbpd5.parser.service.implementaion.PdfBoxTocExtractor;
+import com.usbpd5.parser.service.implementation.ExcelValidator;
+import com.usbpd5.parser.service.implementation.JacksonJsonlWriter;
+import com.usbpd5.parser.service.implementation.PdfBoxSectionExtractor;
+import com.usbpd5.parser.service.implementation.PdfBoxTocExtractor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/pdf")
 public class PdfParserController {
-
     private final String docTitle = "USB Power Delivery Specification Rev 3.2";
 
     // ✅ Always save files in project root /output

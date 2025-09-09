@@ -1,4 +1,4 @@
-package com.usbpd5.parser.service.implementaion;
+package com.usbpd5.parser.service.implementation;
 
 
 import com.usbpd5.parser.model.Section;
